@@ -37,9 +37,9 @@ export function ExtractionProgress({ progress, message, files, step }: Props) {
     <div className="progress-section">
       <div className="progress-card">
         <div className="progress-spinner">
-          {step === 'extracting' && '🔍'}
-          {step === 'analyzing' && '🤖'}
-          {step === 'generating' && '📝'}
+          {step === 'extracting' && 'Search'}
+          {step === 'analyzing' && 'AI'}
+          {step === 'generating' && ''}
         </div>
         <h2>
           {step === 'extracting' && 'Extracting Text from Documents'}

@@ -47,7 +47,7 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
       const formData = new FormData()
       selectedFiles.forEach(f => formData.append('files', f))
       setProgress(30)
-      setStatusMsg('Extracting text — OCR + Indian language detection...')
+      setStatusMsg('Extracting text - OCR + Indian language detection...')
       const extractRes = await axios.post(`${API_BASE}/extract`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
@@ -55,14 +55,14 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
       setExtractedFiles(extracted)
       setProgress(60)
       setStep('analyzing')
-      setStatusMsg('AI reading each document with Vision — extracting verbatim content...')
+      setStatusMsg('AI reading each document with Vision - extracting verbatim content...')
 
       // Pass file references so the server can Vision-read every uploaded file
       const fileRefs = extracted.map(f => ({ storedAs: f.storedAs, originalname: f.filename }))
 
       const analyzeRes = await axios.post(`${API_BASE}/analyze`, {
         texts: extracted.map(f => ({ filename: f.filename, storedAs: f.storedAs, text: f.text || '' })),
-        fileRefs,   // ← server uses these to Vision-read each file verbatim
+        fileRefs,   // <- server uses these to Vision-read each file verbatim
         reportType: reportConfig.reportType,
         bankName: reportConfig.bankName,
         firmName: reportConfig.firmName
@@ -111,12 +111,12 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
         <div className="app-page-header-inner">
           <div>
             <h2>Legal Scrutiny & Due Diligence</h2>
-            <p>Upload property documents · AI extracts & analyzes · Download bank-format report</p>
+            <p>Upload property documents - AI extracts & analyzes - Download bank-format report</p>
           </div>
           <div className="step-indicator">
             {(['upload', 'extracting', 'review', 'done'] as Step[]).map((s, i) => (
               <div key={s} className={`step-item ${step === s || (s === 'extracting' && step === 'analyzing') ? 'active' : ''} ${isStepDone(step, s) ? 'done' : ''}`}>
-                <div className="step-circle">{isStepDone(step, s) ? '✓' : i + 1}</div>
+                <div className="step-circle">{isStepDone(step, s) ? 'OK' : i + 1}</div>
                 <span>{stepLabels[s]}</span>
               </div>
             ))}
@@ -127,8 +127,8 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
       <main className="app-main">
         {error && (
           <div className="error-banner">
-            <span>⚠️ {error}</span>
-            <button onClick={() => setError('')}>✕</button>
+            <span>Warning {error}</span>
+            <button onClick={() => setError('')}></button>
           </div>
         )}
 
@@ -156,14 +156,14 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
         {step === 'done' && (
           <div className="done-section">
             <div className="done-card">
-              <div className="done-icon">📄</div>
+              <div className="done-icon">Doc</div>
               <h2>Legal Scrutiny Report Ready!</h2>
               <p>Your report has been generated in the standard bank format.</p>
               <div className="done-actions">
                 <a href={downloadUrl} className="btn-download" download="Legal_Scrutiny_Report.docx">
-                  ⬇️ Download Report (.docx)
+                  Download️ Download Report (.docx)
                 </a>
-                <button className="btn-secondary" onClick={reset}>🔄 Process New Documents</button>
+                <button className="btn-secondary" onClick={reset}>Refresh Process New Documents</button>
               </div>
             </div>
           </div>

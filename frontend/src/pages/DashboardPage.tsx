@@ -59,9 +59,9 @@ export function DashboardPage({ currentUser }: Props) {
       <div className="app-page-header">
         <div className="app-page-header-inner">
           <div>
-            <h2>📊 Dashboard</h2>
+            <h2>Stats Dashboard</h2>
             <p>Welcome back, {currentUser?.firstName} {currentUser?.lastName}
-              {isAdmin && <span style={{color:'#f0c040',marginLeft:'.5rem'}}>⭐ Administrator</span>}
+              {isAdmin && <span style={{color:'#f0c040',marginLeft:'.5rem'}}>Admin Administrator</span>}
             </p>
           </div>
           <div style={{display:'flex',gap:'.5rem'}}>
@@ -71,7 +71,7 @@ export function DashboardPage({ currentUser }: Props) {
                   style={{padding:'.5rem 1rem',borderRadius:'8px',border:'none',cursor:'pointer',fontWeight:600,
                     background: tab===t ? 'var(--teal)' : 'rgba(255,255,255,.15)',
                     color: tab===t ? 'white' : 'rgba(255,255,255,.8)'}}>
-                  {t==='overview'?'📊 Overview':t==='users'?'👥 Users':'📁 Documents'}
+                  {t==='overview'?'Stats Overview':t==='users'?'Users Users':'Folder Documents'}
                 </button>
               ) : null
             ))}
@@ -82,35 +82,35 @@ export function DashboardPage({ currentUser }: Props) {
       <main className="app-main">
         {msg && <div style={{background:'#dcfce7',border:'1px solid #86efac',borderRadius:'8px',padding:'.75rem 1rem',marginBottom:'1rem',color:'#166534',fontWeight:500}}>{msg}</div>}
 
-        {/* ── OVERVIEW ──────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ OVERVIEW Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {tab === 'overview' && (
           <div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:'1rem',marginBottom:'2rem'}}>
               {isAdmin && <>
-                <StatCard icon="👥" val={String(approved.length)} label="Active Users" color="#1a7f74" />
-                <StatCard icon="⏳" val={String(pending.length)} label="Pending Approvals" color="#f59e0b" />
-                <StatCard icon="🏢" val={String(clients.length)} label="Clients" color="#0d1b4b" />
+                <StatCard icon="Users" val={String(approved.length)} label="Active Users" color="#1a7f74" />
+                <StatCard icon="Wait" val={String(pending.length)} label="Pending Approvals" color="#f59e0b" />
+                <StatCard icon="" val={String(clients.length)} label="Clients" color="#0d1b4b" />
               </>}
-              <StatCard icon="📄" val="0" label="Reports Generated" color="#6366f1" />
-              <StatCard icon="⚖️" val="Live" label="System Status" color="#22c55e" />
+              <StatCard icon="Doc" val="0" label="Reports Generated" color="#6366f1" />
+              <StatCard icon="Law" val="Live" label="System Status" color="#22c55e" />
             </div>
 
             {isAdmin && pending.length > 0 && (
               <div style={{background:'#fffbeb',border:'1px solid #fcd34d',borderRadius:'12px',padding:'1.25rem',marginBottom:'1.5rem'}}>
-                <h3 style={{color:'#92400e',marginBottom:'1rem'}}>⏳ {pending.length} Pending Approval{pending.length>1?'s':''}</h3>
+                <h3 style={{color:'#92400e',marginBottom:'1rem'}}>Wait {pending.length} Pending Approval{pending.length>1?'s':''}</h3>
                 {pending.map(u => (
                   <div key={u.id} style={{display:'flex',alignItems:'center',gap:'1rem',padding:'.75rem',background:'white',borderRadius:'8px',marginBottom:'.5rem',border:'1px solid #fde68a'}}>
                     <div style={{flex:1}}>
                       <div style={{fontWeight:700,color:'#0d1b4b'}}>{u.firstName} {u.lastName}</div>
-                      <div style={{fontSize:'.78rem',color:'#555'}}>{u.email} · {u.org||'—'}</div>
+                      <div style={{fontSize:'.78rem',color:'#555'}}>{u.email} - {u.org||'-'}</div>
                     </div>
                     <button onClick={()=>approveUser(u.id)} disabled={loading}
                       style={{background:'#22c55e',color:'white',border:'none',borderRadius:'6px',padding:'.4rem .9rem',fontWeight:700,cursor:'pointer'}}>
-                      ✓ Approve
+                      OK Approve
                     </button>
                     <button onClick={()=>rejectUser(u.id)} disabled={loading}
                       style={{background:'#ef4444',color:'white',border:'none',borderRadius:'6px',padding:'.4rem .9rem',fontWeight:700,cursor:'pointer'}}>
-                      ✗ Reject
+                      X Reject
                     </button>
                   </div>
                 ))}
@@ -121,12 +121,12 @@ export function DashboardPage({ currentUser }: Props) {
               <h3 style={{color:'#0d1b4b',marginBottom:'1rem'}}>Quick Actions</h3>
               <div style={{display:'flex',gap:'1rem',flexWrap:'wrap'}}>
                 <Link to="/app" style={{display:'inline-flex',alignItems:'center',gap:'.5rem',background:'linear-gradient(135deg,#0d1b4b,#1a7f74)',color:'white',padding:'.75rem 1.5rem',borderRadius:'10px',textDecoration:'none',fontWeight:700}}>
-                  ⬆ Upload & Generate Report
+                  Upload Upload & Generate Report
                 </Link>
                 {isAdmin && (
                   <button onClick={()=>setTab('users')}
                     style={{background:'#f8f9ff',border:'1px solid #e0e4ef',color:'#0d1b4b',padding:'.75rem 1.5rem',borderRadius:'10px',cursor:'pointer',fontWeight:700}}>
-                    👥 Manage Users
+                    Users Manage Users
                   </button>
                 )}
               </div>
@@ -134,14 +134,14 @@ export function DashboardPage({ currentUser }: Props) {
           </div>
         )}
 
-        {/* ── USERS (Admin) ──────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ USERS (Admin) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {tab === 'users' && isAdmin && (
           <div>
             <div style={{background:'white',borderRadius:'12px',border:'1px solid #e2e8f0',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,.06)'}}>
               <div style={{padding:'1.25rem',borderBottom:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <h3 style={{color:'#0d1b4b'}}>User Management ({users.length} total)</h3>
                 <button onClick={loadUsers} style={{background:'#f1f5f9',border:'1px solid #e2e8f0',borderRadius:'6px',padding:'.4rem .9rem',cursor:'pointer',fontSize:'.82rem'}}>
-                  🔄 Refresh
+                  Refresh Refresh
                 </button>
               </div>
               <div style={{overflowX:'auto'}}>
@@ -158,7 +158,7 @@ export function DashboardPage({ currentUser }: Props) {
                       <tr key={u.id} style={{borderBottom:'1px solid #f1f5f9'}}>
                         <td style={{padding:'.7rem 1rem',fontWeight:600,color:'#0d1b4b'}}>{u.firstName} {u.lastName}</td>
                         <td style={{padding:'.7rem 1rem',color:'#555'}}>{u.email}</td>
-                        <td style={{padding:'.7rem 1rem',color:'#555'}}>{u.org||'—'}</td>
+                        <td style={{padding:'.7rem 1rem',color:'#555'}}>{u.org||'-'}</td>
                         <td style={{padding:'.7rem 1rem'}}>
                           <span style={{background:u.role==='admin'?'rgba(201,162,39,.15)':'rgba(13,27,75,.1)',color:u.role==='admin'?'#92400e':'#0d1b4b',padding:'.2rem .6rem',borderRadius:'4px',fontSize:'.72rem',fontWeight:700}}>
                             {u.role}
@@ -176,13 +176,13 @@ export function DashboardPage({ currentUser }: Props) {
                               {u.status !== 'approved' && (
                                 <button onClick={()=>approveUser(u.id)} disabled={loading}
                                   style={{background:'#22c55e',color:'white',border:'none',borderRadius:'4px',padding:'.3rem .65rem',fontSize:'.72rem',fontWeight:700,cursor:'pointer'}}>
-                                  ✓ Approve
+                                  OK Approve
                                 </button>
                               )}
                               {u.status !== 'rejected' && (
                                 <button onClick={()=>rejectUser(u.id)} disabled={loading}
                                   style={{background:'#ef4444',color:'white',border:'none',borderRadius:'4px',padding:'.3rem .65rem',fontSize:'.72rem',fontWeight:700,cursor:'pointer'}}>
-                                  ✗ Reject
+                                  X Reject
                                 </button>
                               )}
                             </div>
@@ -197,15 +197,15 @@ export function DashboardPage({ currentUser }: Props) {
           </div>
         )}
 
-        {/* ── DOCUMENTS ─────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ DOCUMENTS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {tab === 'docs' && (
           <div>
             <div style={{background:'white',borderRadius:'12px',padding:'2rem',border:'1px solid #e2e8f0',textAlign:'center'}}>
-              <div style={{fontSize:'3rem',marginBottom:'1rem'}}>📁</div>
+              <div style={{fontSize:'3rem',marginBottom:'1rem'}}>Folder</div>
               <h3 style={{color:'#0d1b4b',marginBottom:'.5rem'}}>Document History</h3>
               <p style={{color:'#64748b',marginBottom:'1.5rem'}}>Upload documents and generate reports to see them here.</p>
               <Link to="/app" style={{display:'inline-block',background:'linear-gradient(135deg,#0d1b4b,#1a7f74)',color:'white',padding:'.8rem 2rem',borderRadius:'10px',textDecoration:'none',fontWeight:700}}>
-                ⬆ Upload Documents →
+                Upload Upload Documents &rarr;
               </Link>
             </div>
           </div>

@@ -47,7 +47,7 @@ function Footer() {
           <img src="/logo-aneesh-associates.png" alt="Aneesh Associates" className="footer-logo-aa" onError={(e) => { (e.target as HTMLImageElement).style.display='none' }} />
           <div>
             <div className="footer-firm-name">M/s. Aneesh Associates Private Limited</div>
-            <div className="footer-tagline">Legal Advocates & Consultants · Bangalore</div>
+            <div className="footer-tagline">Legal Advocates & Consultants - Bangalore</div>
           </div>
         </div>
         <div className="footer-links">
@@ -62,7 +62,7 @@ function Footer() {
         </div>
       </div>
       <div className="footer-bottom">
-        © {new Date().getFullYear()} Aneesh Associates Pvt. Ltd. · Legal Ops AI Platform · All Rights Reserved
+        © {new Date().getFullYear()} Aneesh Associates Pvt. Ltd. - Legal Ops AI Platform - All Rights Reserved
       </div>
     </footer>
   )

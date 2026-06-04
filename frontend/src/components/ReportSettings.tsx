@@ -40,7 +40,7 @@ export function ReportSettings({ config, onChange }: Props) {
         <div className="form-group">
           <label>Report Type</label>
           <select value={config.reportType} onChange={e => update('reportType', e.target.value)}>
-            <option value="APF">APF — Approved Project Finance</option>
+            <option value="APF">APF - Approved Project Finance</option>
             <option value="Individual">Individual Home Loan</option>
             <option value="LAP">Loan Against Property</option>
             <option value="Commercial">Commercial Property</option>

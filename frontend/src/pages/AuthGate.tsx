@@ -52,14 +52,14 @@ export function AuthGate({ onLogin }: Props) {
   if (mode === 'pending') return (
     <div className="auth-page active">
       <div className="pending-box">
-        <div className="pending-icon">⏳</div>
+        <div className="pending-icon">Wait</div>
         <h2>Approval Pending</h2>
         <p>Your account has been submitted for review by our admin team.</p>
         <p>You will be notified at <strong>{pendingEmail}</strong> once approved.</p>
         <p style={{fontSize:'.78rem',color:'#94a3b8',marginTop:'1rem'}}>Usually approved within 24 hours on business days.</p>
-        <button className="btn-extract" style={{marginTop:'1.5rem'}} onClick={()=>setMode('login')}>← Back to Sign In</button>
+        <button className="btn-extract" style={{marginTop:'1.5rem'}} onClick={()=>setMode('login')}>Back: Back to Sign In</button>
         <div style={{marginTop:'1.5rem',padding:'1rem',background:'#f8fafc',borderRadius:'10px',fontSize:'.78rem',color:'#64748b'}}>
-          📞 8618266924 / 8095669480 &nbsp;|&nbsp; 📧 bangalore@aneeshassociates.in
+           8618266924 / 8095669480 &nbsp;|&nbsp;  bangalore@aneeshassociates.in
         </div>
       </div>
     </div>
@@ -86,9 +86,9 @@ export function AuthGate({ onLogin }: Props) {
               <div className="form-group"><label>Email Address</label>
                 <input type="email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} placeholder="you@example.com" required /></div>
               <div className="form-group"><label>Password</label>
-                <input type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} placeholder="••••••••" required /></div>
+                <input type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} placeholder="********" required /></div>
               <button type="submit" className="btn-extract" style={{marginTop:'1rem'}} disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign In →'}
+                {loading ? 'Signing in...' : 'Sign In ->'}
               </button>
             </form>
             <div className="auth-switch" style={{marginTop:'1rem'}}>
@@ -116,7 +116,7 @@ export function AuthGate({ onLogin }: Props) {
               <div className="form-group"><label>Password *</label>
                 <input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Minimum 6 characters" required /></div>
               <button type="submit" className="btn-extract" style={{marginTop:'1rem',background:'linear-gradient(135deg,#1a7f74,#0d4a45)'}} disabled={loading}>
-                {loading ? 'Submitting...' : 'Submit Access Request →'}
+                {loading ? 'Submitting...' : 'Submit Access Request ->'}
               </button>
             </form>
             <div className="auth-switch" style={{marginTop:'1rem'}}>

@@ -71,11 +71,11 @@ export function FileUploadZone({ onExtract }: Props) {
 
   function getFileIcon(name: string) {
     const ext = name.split('.').pop()?.toLowerCase()
-    if (ext === 'pdf')  return '📕'
-    if (ext === 'docx' || ext === 'doc') return '📘'
-    if (ext === 'zip')  return '🗜'
-    if (['jpg','jpeg','png','tiff','bmp','webp'].includes(ext||'')) return '🖼️'
-    return '📄'
+    if (ext === 'pdf')  return 'PDF'
+    if (ext === 'docx' || ext === 'doc') return 'Word'
+    if (ext === 'zip')  return 'ZIP'
+    if (['jpg','jpeg','png','tiff','bmp','webp'].includes(ext||'')) return 'Img'
+    return 'Doc'
   }
 
   function formatSize(bytes: number) {
@@ -94,15 +94,15 @@ export function FileUploadZone({ onExtract }: Props) {
           ))}
         </div>
         <p className="format-note">
-          🗜 <strong>ZIP supported</strong> — upload a ZIP with multiple documents for bulk processing &nbsp;|&nbsp;
-          🌐 All Indian languages: Kannada, Telugu, Tamil, Hindi, Malayalam, Marathi, Gujarati, Bengali
+          ZIP <strong>ZIP supported</strong> - upload a ZIP with multiple documents for bulk processing &nbsp;|&nbsp;
+           All Indian languages: Kannada, Telugu, Tamil, Hindi, Malayalam, Marathi, Gujarati, Bengali
         </p>
       </div>
 
       <div {...getRootProps()} className={`dropzone ${isDragActive ? 'drag-active' : ''}`}>
         <input {...getInputProps()} />
         <div className="dropzone-content">
-          <div className="dropzone-icon">{extractingZip ? '⏳' : '📂'}</div>
+          <div className="dropzone-icon">{extractingZip ? 'Wait' : 'Folder'}</div>
           {extractingZip ? (
             <p className="dropzone-text active">Extracting ZIP contents...</p>
           ) : isDragActive ? (
@@ -110,8 +110,8 @@ export function FileUploadZone({ onExtract }: Props) {
           ) : (
             <>
               <p className="dropzone-text">Drag & drop documents or ZIP folder here</p>
-              <p className="dropzone-sub">or click to browse — all file types accepted</p>
-              <p className="dropzone-hint">Upload: Sale Deeds, RTCs, ECs, JDAs, GPAs, BBMP Plans, RERA certs, Survey docs — or a ZIP with all of them</p>
+              <p className="dropzone-sub">or click to browse - all file types accepted</p>
+              <p className="dropzone-hint">Upload: Sale Deeds, RTCs, ECs, JDAs, GPAs, BBMP Plans, RERA certs, Survey docs - or a ZIP with all of them</p>
             </>
           )}
         </div>
@@ -130,7 +130,7 @@ export function FileUploadZone({ onExtract }: Props) {
                 <span className="file-name">{file.name}</span>
                 <span className="file-size">{formatSize(file.size)}</span>
               </div>
-              <button className="file-remove" onClick={() => removeFile(file.name)}>✕</button>
+              <button className="file-remove" onClick={() => removeFile(file.name)}></button>
             </div>
           ))}
           <button
@@ -138,7 +138,7 @@ export function FileUploadZone({ onExtract }: Props) {
             onClick={() => onExtract(selectedFiles)}
             disabled={selectedFiles.length === 0 || extractingZip}
           >
-            🔍 Extract & Analyze {selectedFiles.length} Document{selectedFiles.length > 1 ? 's' : ''}
+            Search Extract & Analyze {selectedFiles.length} Document{selectedFiles.length > 1 ? 's' : ''}
           </button>
         </div>
       )}

@@ -16,15 +16,15 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
   const [editData, setEditData] = useState<LegalData>(JSON.parse(JSON.stringify(data)))
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'overview', label: 'Overview', icon: '📋' },
-    { id: 'property', label: 'Property', icon: '🏠' },
-    { id: 'documents', label: 'Documents', icon: '📚' },
-    { id: 'title', label: 'Title Flow', icon: '🔗' },
-    { id: 'checklist', label: 'Checklist', icon: '✅' },
-    { id: 'approvals', label: 'Approvals', icon: '🏛️' },
-    { id: 'opinion', label: 'Opinion', icon: '⚖️' },
-    { id: 'risks', label: 'Risks', icon: '⚠️' },
-    { id: 'raw', label: 'Raw Text', icon: '📄' }
+    { id: 'overview', label: 'Overview', icon: 'List' },
+    { id: 'property', label: 'Property', icon: 'Home' },
+    { id: 'documents', label: 'Documents', icon: '' },
+    { id: 'title', label: 'Title Flow', icon: '' },
+    { id: 'checklist', label: 'Checklist', icon: 'OK' },
+    { id: 'approvals', label: 'Approvals', icon: 'Office' },
+    { id: 'opinion', label: 'Opinion', icon: 'Law' },
+    { id: 'risks', label: 'Risks', icon: 'Warning' },
+    { id: 'raw', label: 'Raw Text', icon: 'Doc' }
   ]
 
   function updateField(path: string, value: unknown) {
@@ -50,13 +50,13 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
     <div className="review-panel">
       <div className="review-header">
         <div>
-          <h2>📋 Review Extracted Legal Data</h2>
+          <h2>List Review Extracted Legal Data</h2>
           <p>AI has extracted and structured the data. Review, edit if needed, then generate the report.</p>
         </div>
         <div className="review-actions">
-          <button className="btn-back" onClick={onBack}>← Start Over</button>
+          <button className="btn-back" onClick={onBack}>Back: Start Over</button>
           <button className="btn-generate" onClick={() => onGenerate(editData)}>
-            📄 Generate Report
+            Doc Generate Report
           </button>
         </div>
       </div>
@@ -95,7 +95,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
 
       <div className="tab-content">
 
-        {/* ── OVERVIEW ─────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ OVERVIEW Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'overview' && (
           <div className="section-grid">
             <div className="info-card">
@@ -114,7 +114,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
             </div>
             {editData.translatedContent?.hasIndianLanguageContent && (
               <div className="info-card highlight-card">
-                <h4>🌐 Indian Language Content Detected</h4>
+                <h4> Indian Language Content Detected</h4>
                 <p><strong>Languages:</strong> {editData.translatedContent.languages?.join(', ')}</p>
                 <p>{editData.translatedContent.translationNotes}</p>
               </div>
@@ -122,7 +122,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
           </div>
         )}
 
-        {/* ── PROPERTY ─────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ PROPERTY Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'property' && (
           <div className="section-grid">
             <div className="info-card full-width">
@@ -170,7 +170,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
           </div>
         )}
 
-        {/* ── DOCUMENTS ────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ DOCUMENTS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'documents' && (
           <div>
             <div className="table-header-row">
@@ -213,7 +213,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
           </div>
         )}
 
-        {/* ── TITLE FLOW ───────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ TITLE FLOW Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'title' && (
           <div>
             <h4>Chain of Title ({editData.titleFlow?.length || 0} events)</h4>
@@ -251,7 +251,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
           </div>
         )}
 
-        {/* ── CHECKLIST ────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ CHECKLIST Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'checklist' && (
           <div className="checklist-panel">
             <h4>Key Checklist</h4>
@@ -293,7 +293,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
           </div>
         )}
 
-        {/* ── APPROVALS ────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ APPROVALS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'approvals' && (
           <div>
             <h4>Approvals, Sanctions & NOCs ({editData.approvalsSanctions?.length || 0})</h4>
@@ -341,7 +341,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
 
             {editData.encumbrances && editData.encumbrances.length > 0 && (
               <>
-                <h4 style={{ marginTop: '2rem', color: '#CC0000' }}>⚠️ Encumbrances / Charges ({editData.encumbrances.length})</h4>
+                <h4 style={{ marginTop: '2rem', color: '#CC0000' }}>Warning Encumbrances / Charges ({editData.encumbrances.length})</h4>
                 <div className="review-table-wrap">
                   <table className="review-table">
                     <thead>
@@ -365,14 +365,14 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
 
             {editData.btDetails && editData.btDetails !== 'N/A' && (
               <div className="info-card" style={{ marginTop: '1.5rem', borderLeft: '4px solid #FF6600' }}>
-                <h4>🔄 Balance Transfer / Existing Charge Details</h4>
+                <h4>Refresh Balance Transfer / Existing Charge Details</h4>
                 <FieldArea label="BT Details" value={editData.btDetails} onChange={v => updateField('btDetails', v)} rows={3} />
               </div>
             )}
           </div>
         )}
 
-        {/* ── OPINION ──────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ OPINION Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'opinion' && (
           <div className="section-grid">
             <div className="info-card full-width">
@@ -391,12 +391,12 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
           </div>
         )}
 
-        {/* ── RISKS ────────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ RISKS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'risks' && (
           <div>
             <h4>Risk Flags ({editData.riskFlags?.length || 0})</h4>
             {(editData.riskFlags || []).length === 0 ? (
-              <div className="empty-state">✅ No risk flags identified</div>
+              <div className="empty-state">OK No risk flags identified</div>
             ) : (
               <div className="risk-list">
                 {(editData.riskFlags || []).map((r, i) => (
@@ -413,7 +413,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
           </div>
         )}
 
-        {/* ── RAW TEXT ─────────────────────────────────────────────────────────── */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ RAW TEXT Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
         {activeTab === 'raw' && (
           <div>
             <h4>Extracted Raw Text from Documents</h4>
@@ -425,7 +425,7 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
                   <span className="char-count">{f.charCount?.toLocaleString()} chars</span>
                 </div>
                 {f.error ? (
-                  <div className="raw-error">⚠️ {f.error}</div>
+                  <div className="raw-error">Warning {f.error}</div>
                 ) : (
                   <pre className="raw-text">{f.text?.substring(0, 3000)}{f.text?.length > 3000 ? '\n\n... [truncated for display]' : ''}</pre>
                 )}
@@ -437,12 +437,12 @@ export function DataReviewPanel({ data, extractedFiles, config, onGenerate, onBa
       </div>
 
       <div className="review-footer">
-        <button className="btn-back" onClick={onBack}>← Start Over</button>
+        <button className="btn-back" onClick={onBack}>Back: Start Over</button>
         <div className="firm-info">
           Report by: <strong>{config.firmName}</strong> | Advocate: <strong>{config.advocateName}</strong>
         </div>
         <button className="btn-generate" onClick={() => onGenerate(editData)}>
-          📄 Generate DOCX Report →
+          Doc Generate DOCX Report &rarr;
         </button>
       </div>
     </div>
