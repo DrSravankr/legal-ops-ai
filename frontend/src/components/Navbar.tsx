@@ -9,6 +9,7 @@ export function Navbar({ user, onLogout }: { user?:User|null; onLogout?:()=>void
 
   const nav = [
     { to: '/', label: 'Home' },
+    ...(user ? [{ to: '/dashboard', label: '📊 Dashboard' }] : []),
     { to: '/app', label: 'Legal Scrutiny App' },
     { to: '/about', label: 'About Us' },
   ]
@@ -42,8 +43,8 @@ export function Navbar({ user, onLogout }: { user?:User|null; onLogout?:()=>void
               {n.label}
             </Link>
           ))}
-          <Link to="/app" className="navbar-cta" onClick={() => setOpen(false)}>
-            Start Scrutiny →
+          <Link to={user ? '/app' : '/login'} className="navbar-cta" onClick={() => setOpen(false)}>
+            {user ? 'Start Scrutiny →' : 'Sign In →'}
           </Link>
         </div>
 

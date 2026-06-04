@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import { Navbar } from './components/Navbar'
 import { LandingPage } from './pages/LandingPage'
 import { AboutPage } from './pages/AboutPage'
 import { AppPage } from './pages/AppPage'
 import { AuthGate } from './pages/AuthGate'
+import { DashboardPage } from './pages/DashboardPage'
 import './App.css'
 
 interface User { id:string; firstName:string; lastName:string; email:string; role:string; status:string }
@@ -27,10 +28,11 @@ export default function App() {
     <div className="site-root">
       <Navbar user={user} onLogout={handleLogout} />
       <Routes>
-        <Route path="/"      element={<LandingPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/login" element={user ? <ProtectedApp user={user} onLogout={handleLogout}/> : <AuthGate onLogin={handleLogin} />} />
-        <Route path="/app"   element={user ? <AppPage user={user} onLogout={handleLogout}/> : <AuthGate onLogin={handleLogin} />} />
+        <Route path="/"          element={<LandingPage />} />
+        <Route path="/about"     element={<AboutPage />} />
+        <Route path="/login"     element={user ? <ProtectedApp user={user} onLogout={handleLogout}/> : <AuthGate onLogin={handleLogin} />} />
+        <Route path="/app"       element={user ? <AppPage user={user} onLogout={handleLogout}/> : <AuthGate onLogin={handleLogin} />} />
+        <Route path="/dashboard" element={user ? <DashboardPage currentUser={user}/> : <AuthGate onLogin={handleLogin} />} />
       </Routes>
       <Footer />
     </div>
