@@ -4,8 +4,7 @@ frontend/node_modules/
 backend/.env
 backend/uploads/
 backend/reports/
-*.docx
-*.zip
+# NOT ignoring backend/public — pre-built frontend committed to repo
 *.rar
 data/
 .DS_Store
