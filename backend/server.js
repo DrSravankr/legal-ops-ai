@@ -124,11 +124,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = ['.pdf','.docx','.doc','.jpg','.jpeg','.png','.tiff','.tif','.bmp','.gif','.webp'];
-    allowed.includes(path.extname(file.originalname).toLowerCase()) ? cb(null, true) : cb(new Error('Unsupported file type'));
-  }
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB — supports large ZIPs
+  // Accept ALL file types — no filter
 });
 
 // ── Health ────────────────────────────────────────────────────────────────────
@@ -138,19 +135,57 @@ app.get('/api/health', (req, res) => {
 });
 
 // ── Extract ───────────────────────────────────────────────────────────────────
-app.post('/api/extract', upload.array('files', 20), async (req, res) => {
+app.post('/api/extract', upload.array('files', 50), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'No files uploaded' });
 
+    const LEGAL_EXTS = ['.pdf','.docx','.doc','.jpg','.jpeg','.png','.tiff','.tif','.bmp','.gif','.webp'];
     const results = [];
+
     for (const file of req.files) {
-      const ext  = path.extname(file.originalname).toLowerCase();
+      const ext = path.extname(file.originalname).toLowerCase();
+
+      // ── ZIP: extract contents and process each file inside ────────────────
+      if (ext === '.zip') {
+        try {
+          const JSZip = require('jszip');
+          const zipData = fs.readFileSync(file.path);
+          const zip = await JSZip.loadAsync(zipData);
+          const entries = [];
+          zip.forEach((relPath, entry) => {
+            if (!entry.dir && !relPath.includes('__MACOSX')) entries.push({ relPath, entry });
+          });
+          for (const { relPath, entry } of entries) {
+            const fileExt = path.extname(relPath).toLowerCase();
+            if (!LEGAL_EXTS.includes(fileExt)) continue;
+            const fileName = path.basename(relPath);
+            const savedName = uuidv4() + fileExt;
+            const savedPath = path.join(UPLOADS_DIR, savedName);
+            const content = await entry.async('nodebuffer');
+            fs.writeFileSync(savedPath, content);
+            let text = '', method = '';
+            try {
+              if (['.docx','.doc'].includes(fileExt)) { text = await extractTextFromDocx(savedPath); method = 'DOCX'; }
+              else if (fileExt === '.pdf')             { text = await extractTextFromPdf(savedPath);  method = 'PDF'; }
+              else                                     { text = await extractTextFromImage(savedPath);method = 'OCR'; }
+            } catch(e2) { /* text stays empty */ }
+            results.push({ filename: fileName, storedAs: savedName, method: `ZIP → ${method}`, text, charCount: text.length });
+          }
+          fs.unlinkSync(file.path); // remove the ZIP itself after extraction
+        } catch(zipErr) {
+          results.push({ filename: file.originalname, storedAs: file.filename, method: 'ZIP Failed', text: '', error: zipErr.message });
+        }
+        continue;
+      }
+
+      // ── Regular file ──────────────────────────────────────────────────────
       let text = '', method = '';
       try {
         if (['.docx','.doc'].includes(ext))  { text = await extractTextFromDocx(file.path); method = 'DOCX'; }
-        else if (ext === '.pdf')              { text = await extractTextFromPdf(file.path);  method = 'PDF';  }
-        else                                  { text = await extractTextFromImage(file.path);method = 'OCR';  }
+        else if (ext === '.pdf')              { text = await extractTextFromPdf(file.path);  method = 'PDF'; }
+        else if (LEGAL_EXTS.includes(ext))   { text = await extractTextFromImage(file.path);method = 'OCR'; }
+        else                                 { method = 'Skipped (unsupported type)'; }
         results.push({ filename: file.originalname, storedAs: file.filename, method, text, charCount: text.length });
       } catch(err) {
         results.push({ filename: file.originalname, storedAs: file.filename, method: 'Failed', text: '', error: err.message });
