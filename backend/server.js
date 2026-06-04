@@ -5,7 +5,9 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const os      = require('os');
+const bcrypt  = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const SALT_ROUNDS = 10;
 
 const { extractTextFromDocx } = require('./extractors/docxExtractor');
 const { extractTextFromPdf }  = require('./extractors/pdfExtractor');
@@ -58,44 +60,63 @@ function saveUsers(users) {
 
 // ── Auth endpoints ─────────────────────────────────────────────────────────────
 
-// Register
-app.post('/api/auth/register', (req, res) => {
-  const { firstName, lastName, email, password, org, mobile } = req.body;
-  if (!firstName || !lastName || !email || !password)
-    return res.status(400).json({ error: 'All fields are required' });
+// Register — passwords hashed with bcrypt
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, org, mobile } = req.body;
+    if (!firstName || !lastName || !email || !password)
+      return res.status(400).json({ error: 'All fields are required' });
 
-  const users = getUsers();
-  if (users.find(u => u.email.toLowerCase() === email.toLowerCase()))
-    return res.status(409).json({ error: 'Email already registered. Please sign in.' });
+    const users = getUsers();
+    if (users.find(u => u.email.toLowerCase() === email.toLowerCase()))
+      return res.status(409).json({ error: 'Email already registered. Please sign in.' });
 
-  const newUser = {
-    id: uuidv4(), firstName, lastName,
-    email: email.toLowerCase(), password, org: org||'', mobile: mobile||'',
-    role: 'client', status: 'pending', created: new Date().toISOString()
-  };
-  users.push(newUser);
-  saveUsers(users);
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    const newUser = {
+      id: uuidv4(), firstName, lastName,
+      email: email.toLowerCase(), password: hashedPassword,
+      org: org||'', mobile: mobile||'',
+      role: 'client', status: 'pending', created: new Date().toISOString()
+    };
+    users.push(newUser);
+    saveUsers(users);
 
-  const { password: _, ...safeUser } = newUser;
-  res.json({ success: true, user: safeUser, message: 'Registration submitted. Awaiting admin approval.' });
+    const { password: _, ...safeUser } = newUser;
+    res.json({ success: true, user: safeUser, message: 'Registration submitted. Awaiting admin approval.' });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// Login
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+// Login — bcrypt password comparison
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-  const users = getUsers();
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-  if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+    const users = getUsers();
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
-  if (user.status === 'pending')
-    return res.status(403).json({ error: 'pending', message: 'Your account is awaiting admin approval.' });
-  if (user.status === 'rejected')
-    return res.status(403).json({ error: 'rejected', message: 'Your access request was not approved.' });
+    // Support both bcrypt hashed and plain (for seeded admin)
+    const passwordMatch = user.password.startsWith('$2')
+      ? await bcrypt.compare(password, user.password)
+      : user.password === password;
 
-  const { password: _, ...safeUser } = user;
-  res.json({ success: true, user: safeUser });
+    if (!passwordMatch) return res.status(401).json({ error: 'Invalid email or password' });
+
+    // Auto-upgrade plain password to bcrypt on first login
+    if (!user.password.startsWith('$2')) {
+      user.password = await bcrypt.hash(password, SALT_ROUNDS);
+      saveUsers(users);
+    }
+
+    if (user.status === 'pending')
+      return res.status(403).json({ error: 'pending', message: 'Your account is awaiting admin approval.' });
+    if (user.status === 'rejected')
+      return res.status(403).json({ error: 'rejected', message: 'Your access request was not approved.' });
+
+    const { password: _, ...safeUser } = user;
+    res.json({ success: true, user: safeUser });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // Get all users (admin)
