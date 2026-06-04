@@ -8,6 +8,8 @@ import axios from 'axios'
 
 const API_BASE = '/api'
 
+interface User { id:string; firstName:string; lastName:string; email:string; role:string }
+
 type Step = 'upload' | 'extracting' | 'analyzing' | 'review' | 'generating' | 'done'
 
 function isStepDone(current: Step, step: Step) {
@@ -19,7 +21,7 @@ const stepLabels: Record<string, string> = {
   upload: 'Upload', extracting: 'Extract & Analyze', review: 'Review', done: 'Download'
 }
 
-export function AppPage() {
+export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>void }) {
   const [step, setStep] = useState<Step>('upload')
   const [files, setFiles] = useState<File[]>([])
   const [extractedFiles, setExtractedFiles] = useState<ExtractedFile[]>([])

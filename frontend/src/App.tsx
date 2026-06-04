@@ -1,18 +1,36 @@
-import { Routes, Route } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { Navbar } from './components/Navbar'
 import { LandingPage } from './pages/LandingPage'
 import { AboutPage } from './pages/AboutPage'
 import { AppPage } from './pages/AppPage'
+import { AuthGate } from './pages/AuthGate'
 import './App.css'
 
+interface User { id:string; firstName:string; lastName:string; email:string; role:string; status:string }
+
+function ProtectedApp({ user, onLogout }: { user:User|null; onLogout:()=>void }) {
+  const navigate = useNavigate()
+  if (!user) { navigate('/login'); return null }
+  return <AppPage user={user} onLogout={onLogout} />
+}
+
 export default function App() {
+  const [user, setUser] = useState<User|null>(() => {
+    try { const s = localStorage.getItem('legal_ops_user'); return s ? JSON.parse(s) : null } catch { return null }
+  })
+
+  function handleLogin(u: User) { setUser(u); localStorage.setItem('legal_ops_user', JSON.stringify(u)) }
+  function handleLogout() { setUser(null); localStorage.removeItem('legal_ops_user') }
+
   return (
     <div className="site-root">
-      <Navbar />
+      <Navbar user={user} onLogout={handleLogout} />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/app" element={<AppPage />} />
+        <Route path="/"      element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/login" element={user ? <ProtectedApp user={user} onLogout={handleLogout}/> : <AuthGate onLogin={handleLogin} />} />
+        <Route path="/app"   element={user ? <AppPage user={user} onLogout={handleLogout}/> : <AuthGate onLogin={handleLogin} />} />
       </Routes>
       <Footer />
     </div>

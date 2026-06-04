@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
-export function Navbar() {
+interface User { firstName:string; lastName:string; email:string; role:string }
+
+export function Navbar({ user, onLogout }: { user?:User|null; onLogout?:()=>void }) {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
 
@@ -45,16 +47,26 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Right — Aneesh Infotech logo */}
+        {/* Right — user info or Infotech branding */}
         <div className="navbar-right">
-          <span className="navbar-devby">Developed by</span>
-          <img
-            src="/logo-aneesh-infotech.png"
-            alt="Aneesh Infotech"
-            className="navbar-logo-ai"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-          />
-          <span className="navbar-infotech-name">Aneesh Infotech</span>
+          {user ? (
+            <>
+              <span style={{fontSize:'.78rem',color:'#555',marginRight:'.5rem'}}>
+                👤 {user.firstName} {user.lastName}
+                {user.role==='admin' && <span style={{color:'#c9a227',fontWeight:700}}> (Admin)</span>}
+              </span>
+              <button onClick={onLogout} style={{fontSize:'.75rem',color:'#cc0000',background:'rgba(239,68,68,.08)',border:'1px solid rgba(239,68,68,.2)',padding:'.3rem .75rem',borderRadius:'6px',cursor:'pointer',fontWeight:600}}>
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="navbar-devby">Developed by</span>
+              <img src="/logo-aneesh-infotech.png" alt="Aneesh Infotech" className="navbar-logo-ai"
+                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              <span className="navbar-infotech-name">Aneesh Infotech</span>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
