@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: legal-ops-ai
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend
+    startCommand: NODE_ENV=production node backend/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PORT
+        value: 10000

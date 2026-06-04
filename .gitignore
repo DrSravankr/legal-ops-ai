@@ -1,0 +1,12 @@
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+backend/.env
+backend/uploads/
+backend/reports/
+*.docx
+*.zip
+*.rar
+data/
+.DS_Store
+Thumbs.db
