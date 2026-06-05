@@ -151,8 +151,15 @@ const upload = multer({
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Legal Ops AI System is running',
-    uploadDir: UPLOADS_DIR, reportsDir: REPORTS_DIR });
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasGemini    = !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+  res.json({
+    status: 'ok',
+    message: 'Legal Ops AI System is running',
+    ai: hasAnthropic ? 'anthropic' : hasGemini ? 'gemini' : 'NONE — set ANTHROPIC_API_KEY',
+    uploadDir: UPLOADS_DIR,
+    reportsDir: REPORTS_DIR
+  });
 });
 
 // ── Extract ───────────────────────────────────────────────────────────────────
@@ -239,7 +246,21 @@ app.post('/api/analyze', async (req, res) => {
 
     const data = await extractLegalData(combinedText, reportType, bankName, firmName, fileObjects);
     res.json({ success: true, data });
-  } catch(e) { console.error(e); res.status(500).json({ error: e.message }); }
+  } catch(e) {
+    console.error('[/api/analyze error]', e.message);
+    const msg = e.message || 'Analysis failed';
+    // Provide actionable error messages
+    if (msg.includes('API key') || msg.includes('No AI API key')) {
+      return res.status(500).json({ error: 'AI service not configured. Please set ANTHROPIC_API_KEY in the Render environment variables dashboard.' });
+    }
+    if (msg.includes('401') || msg.includes('invalid_api_key') || msg.includes('authentication')) {
+      return res.status(500).json({ error: 'AI API key is invalid or expired. Please update ANTHROPIC_API_KEY in Render dashboard.' });
+    }
+    if (msg.includes('quota') || msg.includes('429') || msg.includes('rate_limit')) {
+      return res.status(500).json({ error: 'AI rate limit reached. Please wait a minute and try again.' });
+    }
+    res.status(500).json({ error: msg });
+  }
 });
 
 // ── Generate Report ───────────────────────────────────────────────────────────
