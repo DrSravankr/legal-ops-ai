@@ -15,8 +15,89 @@ const { extractTextFromImage }= require('./extractors/imageExtractor');
 const { extractLegalData }    = require('./ai/claudeExtractor');
 const { generateLegalReport } = require('./generators/reportGenerator');
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  SELF-HEALING AI AGENT — automatically catches and recovers from crashes
+// ══════════════════════════════════════════════════════════════════════════════
+const AGENT_LOG = [];
+const MAX_LOG   = 100;
+
+function agentLog(level, msg, ctx = {}) {
+  const entry = { ts: new Date().toISOString(), level, msg, ...ctx };
+  AGENT_LOG.unshift(entry);
+  if (AGENT_LOG.length > MAX_LOG) AGENT_LOG.pop();
+  console[level === 'error' ? 'error' : 'log'](`[AGENT ${level.toUpperCase()}] ${msg}`, ctx.error || '');
+}
+
+// Catch ALL unhandled promise rejections — prevent server crash
+process.on('unhandledRejection', (reason, promise) => {
+  agentLog('error', 'Unhandled promise rejection caught by agent', { error: String(reason) });
+  // Do NOT exit — agent keeps server alive
+});
+
+// Catch ALL uncaught exceptions — prevent server crash
+process.on('uncaughtException', (err) => {
+  agentLog('error', 'Uncaught exception caught by agent', { error: err.message });
+  // Do NOT exit — agent keeps server alive
+});
+
+// Self-healing middleware — wraps every route handler
+function heal(fn) {
+  return async (req, res, next) => {
+    try {
+      // Set keep-alive + generous timeout for long AI operations
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Keep-Alive', 'timeout=120');
+      req.socket.setTimeout(120000); // 2 minutes
+      res.setTimeout(120000);
+      await fn(req, res, next);
+    } catch(err) {
+      agentLog('error', `Route ${req.method} ${req.path} crashed`, { error: err.message });
+      if (!res.headersSent) {
+        const msg  = err.message || 'Unknown error';
+        const code = msg.includes('timeout') || msg.includes('502') ? 504 : 500;
+        res.status(code).json({
+          error: friendlyError(msg),
+          agentNote: 'Error was caught by the self-healing agent. The server remains online.',
+          retryable: code === 504 || msg.includes('rate_limit') || msg.includes('overload')
+        });
+      }
+    }
+  };
+}
+
+function friendlyError(msg) {
+  if (msg.includes('502') || msg.includes('timeout') || msg.includes('ECONNRESET'))
+    return 'Request timed out during AI processing. Please try with fewer/smaller documents, or retry.';
+  if (msg.includes('credit') || msg.includes('billing'))
+    return 'AI credits exhausted. Check GROQ_API_KEY in Render environment variables.';
+  if (msg.includes('quota') || msg.includes('429') || msg.includes('rate_limit') || msg.includes('TPM'))
+    return 'AI rate limit reached. Please wait 30 seconds and retry.';
+  if (msg.includes('No AI API key') || msg.includes('GROQ_API_KEY'))
+    return 'AI key not configured. Add GROQ_API_KEY in Render Dashboard → Environment.';
+  if (msg.includes('JSON') || msg.includes('parse'))
+    return 'AI returned an unexpected format. Please retry — this is transient.';
+  if (msg.includes('413') || msg.includes('too large') || msg.includes('TPM'))
+    return 'Document is too large for single processing. Try uploading fewer files at a time.';
+  return msg;
+}
+
 const app = express();
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+// Increase server-level timeout to 120 seconds (prevents 502 on slow AI calls)
+app.use((req, res, next) => {
+  req.socket.setTimeout(120000);
+  res.setTimeout(120000, () => {
+    agentLog('warn', `Request timeout: ${req.method} ${req.path}`);
+    if (!res.headersSent) {
+      res.status(504).json({
+        error: 'AI processing took too long. Try with fewer/smaller documents and retry.',
+        retryable: true
+      });
+    }
+  });
+  next();
+});
 
 // ── Static files ──────────────────────────────────────────────────────────────
 if (IS_PRODUCTION) {
@@ -149,6 +230,26 @@ const upload = multer({
   // Accept ALL file types — no filter
 });
 
+// ── Agent monitor endpoint ────────────────────────────────────────────────────
+app.get('/api/agent', (req, res) => {
+  res.json({
+    status: 'self-healing agent active',
+    uptime: Math.round(process.uptime()) + 's',
+    memory: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
+    recentErrors: AGENT_LOG.filter(l => l.level === 'error').slice(0, 10),
+    recentWarnings: AGENT_LOG.filter(l => l.level === 'warn').slice(0, 5),
+    totalEvents: AGENT_LOG.length,
+    fixes: {
+      unhandledRejections: 'caught — server stays alive',
+      uncaughtExceptions: 'caught — server stays alive',
+      routeTimeouts: '120s limit — returns 504 with retry hint',
+      aiRateLimit: 'caught — returns friendly message',
+      aiCredits: 'caught — returns setup instructions',
+      jsonParseErrors: 'caught — returns retry message'
+    }
+  });
+});
+
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   const hasGroq     = !!process.env.GROQ_API_KEY;
@@ -210,7 +311,7 @@ app.get('/api/test-ai', async (req, res) => {
 });
 
 // ── Extract ───────────────────────────────────────────────────────────────────
-app.post('/api/extract', upload.array('files', 50), async (req, res) => {
+app.post('/api/extract', upload.array('files', 50), heal(async (req, res) => {
   try {
     if (!req.files || req.files.length === 0)
       return res.status(400).json({ error: 'No files uploaded' });
@@ -267,67 +368,44 @@ app.post('/api/extract', upload.array('files', 50), async (req, res) => {
       }
     }
     res.json({ success: true, files: results });
-  } catch(e) { res.status(500).json({ error: e.message }); }
-});
+}));  // heal() closes here
 
 // ── Analyze ───────────────────────────────────────────────────────────────────
-app.post('/api/analyze', async (req, res) => {
-  try {
-    const { texts, fileRefs, reportType='APF',
-            bankName='Axis Bank Limited',
-            firmName='M/s. Aneesh Associates Private Limited' } = req.body;
+app.post('/api/analyze', heal(async (req, res) => {
+  const { texts, fileRefs, reportType='APF',
+          bankName='Axis Bank Limited',
+          firmName='M/s. Aneesh Associates Private Limited' } = req.body;
 
-    if ((!texts||!texts.length) && (!fileRefs||!fileRefs.length))
-      return res.status(400).json({ error: 'No documents provided' });
+  if ((!texts||!texts.length) && (!fileRefs||!fileRefs.length))
+    return res.status(400).json({ error: 'No documents provided' });
 
-    const combinedText = (texts||[]).map((t,i) =>
-      `--- Document ${i+1}: ${t.filename} ---\n${t.text||''}` ).join('\n\n');
+  const combinedText = (texts||[]).map((t,i) =>
+    `--- Document ${i+1}: ${t.filename} ---\n${t.text||''}` ).join('\n\n');
 
-    const fileObjects = [...(fileRefs||[]).map(r => ({
-        path: path.join(UPLOADS_DIR, r.storedAs), originalname: r.originalname, filename: r.storedAs
-      })),
-      ...(texts||[]).filter(t=>t.storedAs).map(t => ({
-        path: path.join(UPLOADS_DIR, t.storedAs), originalname: t.filename, filename: t.storedAs
-      }))
-    ].filter(f => fs.existsSync(f.path));
+  const fileObjects = [...(fileRefs||[]).map(r => ({
+      path: path.join(UPLOADS_DIR, r.storedAs), originalname: r.originalname, filename: r.storedAs
+    })),
+    ...(texts||[]).filter(t=>t.storedAs).map(t => ({
+      path: path.join(UPLOADS_DIR, t.storedAs), originalname: t.filename, filename: t.storedAs
+    }))
+  ].filter(f => fs.existsSync(f.path));
 
-    const data = await extractLegalData(combinedText, reportType, bankName, firmName, fileObjects);
-    res.json({ success: true, data });
-  } catch(e) {
-    console.error('[/api/analyze error]', e.message);
-    const msg = e.message || 'Analysis failed';
-    // ── Actionable error messages ──────────────────────────────────────────
-    const FIX = 'PERMANENT FIX: Get a FREE Groq key at https://console.groq.com → set GROQ_API_KEY in Render Environment Variables. No credit card, no payment, 6000 requests/day free.';
-    if (msg.includes('No AI API key') || msg.includes('apiKey') || msg.includes('not configured')) {
-      return res.status(503).json({ error: `No AI API key. ${FIX}` });
-    }
-    if (msg.includes('invalid') && (msg.includes('key') || msg.includes('api'))) {
-      return res.status(503).json({ error: `Invalid API key. ${FIX}` });
-    }
-    if (msg.includes('credit balance') || msg.includes('credit') || msg.includes('billing')) {
-      return res.status(503).json({ error: `AI credits exhausted. ${FIX}` });
-    }
-    if (msg.includes('quota') || msg.includes('429') || msg.includes('rate_limit') || msg.includes('QUOTA')) {
-      return res.status(503).json({ error: `AI quota exceeded. ${FIX}` });
-    }
-    if (msg.includes('overloaded') || msg.includes('529')) {
-      return res.status(503).json({ error: 'AI service overloaded. Please wait 30 seconds and retry.' });
-    }
-    res.status(500).json({ error: msg });
-  }
-});
+  agentLog('info', `Analyzing ${fileObjects.length} file(s) with ${reportType}/${bankName}`);
+  const data = await extractLegalData(combinedText, reportType, bankName, firmName, fileObjects);
+  agentLog('info', 'Analysis complete', { status: data.overallStatus });
+  res.json({ success: true, data });
+}));
 
 // ── Generate Report ───────────────────────────────────────────────────────────
-app.post('/api/generate-report', async (req, res) => {
-  try {
-    const { data, firmName, advocateName } = req.body;
-    if (!data) return res.status(400).json({ error: 'No data provided' });
-    const reportId  = uuidv4();
-    const reportPath = path.join(REPORTS_DIR, `Report_${reportId}.docx`);
-    await generateLegalReport(data, reportPath, firmName, advocateName);
-    res.json({ success: true, reportId, downloadUrl: `/api/download-report/${reportId}` });
-  } catch(e) { res.status(500).json({ error: e.message }); }
-});
+app.post('/api/generate-report', heal(async (req, res) => {
+  const { data, firmName, advocateName } = req.body;
+  if (!data) return res.status(400).json({ error: 'No data provided' });
+  const reportId   = uuidv4();
+  const reportPath = path.join(REPORTS_DIR, `Report_${reportId}.docx`);
+  await generateLegalReport(data, reportPath, firmName, advocateName);
+  agentLog('info', `Report generated: ${reportId}`);
+  res.json({ success: true, reportId, downloadUrl: `/api/download-report/${reportId}` });
+}));  // heal() closes here
 
 // ── Download Report ───────────────────────────────────────────────────────────
 app.get('/api/download-report/:id', (req, res) => {

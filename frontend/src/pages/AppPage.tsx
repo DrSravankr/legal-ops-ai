@@ -37,6 +37,29 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
   const [downloadUrl, setDownloadUrl] = useState('')
   const [error, setError] = useState('')
 
+  // Auto-retry helper — retries on 502/504/429 up to maxRetries times
+  async function axiosWithRetry(fn: () => Promise<unknown>, maxRetries = 2): Promise<unknown> {
+    let lastErr: unknown
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        return await fn()
+      } catch (err: unknown) {
+        lastErr = err
+        const e = err as { response?: { status?: number; data?: { retryable?: boolean } }; message?: string }
+        const status = e.response?.status || 0
+        const retryable = e.response?.data?.retryable || status === 502 || status === 504 || status === 429
+        if (retryable && attempt <= maxRetries) {
+          const wait = attempt * 8000 // 8s, 16s
+          setStatusMsg(`⚡ AI agent: connection issue detected — auto-retrying in ${wait/1000}s (attempt ${attempt}/${maxRetries})...`)
+          await new Promise(r => setTimeout(r, wait))
+          continue
+        }
+        throw err
+      }
+    }
+    throw lastErr
+  }
+
   async function handleExtract(selectedFiles: File[]) {
     setFiles(selectedFiles)
     setStep('extracting')
@@ -47,26 +70,32 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
       const formData = new FormData()
       selectedFiles.forEach(f => formData.append('files', f))
       setProgress(30)
-      setStatusMsg('Extracting text - OCR + Indian language detection...')
-      const extractRes = await axios.post(`${API_BASE}/extract`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      setStatusMsg('Extracting text — OCR + Kannada/Telugu language detection...')
+      const extractRes = await axiosWithRetry(() =>
+        axios.post(`${API_BASE}/extract`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 120000 // 2 min
+        })
+      ) as { data: { files: ExtractedFile[] } }
+
       const extracted: ExtractedFile[] = extractRes.data.files
       setExtractedFiles(extracted)
       setProgress(60)
       setStep('analyzing')
-      setStatusMsg('AI reading each document with Vision - extracting verbatim content...')
+      setStatusMsg('🔍 Sarvam AI translating Indian language content → Groq Llama analysing → building report...')
 
-      // Pass file references so the server can Vision-read every uploaded file
       const fileRefs = extracted.map(f => ({ storedAs: f.storedAs, originalname: f.filename }))
 
-      const analyzeRes = await axios.post(`${API_BASE}/analyze`, {
-        texts: extracted.map(f => ({ filename: f.filename, storedAs: f.storedAs, text: f.text || '' })),
-        fileRefs,   // <- server uses these to Vision-read each file verbatim
-        reportType: reportConfig.reportType,
-        bankName: reportConfig.bankName,
-        firmName: reportConfig.firmName
-      })
+      const analyzeRes = await axiosWithRetry(() =>
+        axios.post(`${API_BASE}/analyze`, {
+          texts: extracted.map(f => ({ filename: f.filename, storedAs: f.storedAs, text: f.text || '' })),
+          fileRefs,
+          reportType: reportConfig.reportType,
+          bankName: reportConfig.bankName,
+          firmName: reportConfig.firmName
+        }, { timeout: 120000 }) // 2 min timeout
+      ) as { data: { data: LegalData } }
+
       setLegalData(analyzeRes.data.data)
       setProgress(100)
       setStep('review')
