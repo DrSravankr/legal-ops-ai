@@ -126,9 +126,17 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
 
       <main className="app-main">
         {error && (
-          <div className="error-banner">
-            <span>Warning {error}</span>
-            <button onClick={() => setError('')}></button>
+          <div className="error-banner" style={{display:'flex',flexDirection:'column',gap:'8px',padding:'16px',borderRadius:'10px',background:'#fff3f3',border:'1px solid #fca5a5',color:'#dc2626',marginBottom:'16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+              <strong style={{fontSize:'13px'}}>⚠ {error}</strong>
+              <button onClick={() => setError('')} style={{background:'none',border:'none',cursor:'pointer',fontSize:'16px',color:'#dc2626',padding:'0 4px'}}>✕</button>
+            </div>
+            {(error.includes('credit') || error.includes('quota') || error.includes('API key') || error.includes('aistudio')) && (
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer"
+                style={{display:'inline-flex',alignItems:'center',gap:'6px',background:'#0f2a4a',color:'white',padding:'8px 14px',borderRadius:'6px',fontSize:'12px',fontWeight:'600',textDecoration:'none',width:'fit-content'}}>
+                🔑 Get Free Gemini API Key →
+              </a>
+            )}
           </div>
         )}
 

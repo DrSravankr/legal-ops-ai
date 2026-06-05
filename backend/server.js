@@ -154,12 +154,42 @@ app.get('/api/health', (req, res) => {
   const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
   const hasGemini    = !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
   res.json({
-    status: 'ok',
-    message: 'Legal Ops AI System is running',
-    ai: hasAnthropic ? 'anthropic' : hasGemini ? 'gemini' : 'NONE — set ANTHROPIC_API_KEY',
-    uploadDir: UPLOADS_DIR,
-    reportsDir: REPORTS_DIR
+    status: 'ok', message: 'Legal Ops AI System is running',
+    ai: hasAnthropic ? 'anthropic' : hasGemini ? 'gemini' : 'NONE',
+    uploadDir: UPLOADS_DIR, reportsDir: REPORTS_DIR
   });
+});
+
+// ── AI Key Test ───────────────────────────────────────────────────────────────
+app.get('/api/test-ai', async (req, res) => {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const geminiKey    = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const results = {};
+
+  if (anthropicKey) {
+    try {
+      const { Anthropic } = require('@anthropic-ai/sdk');
+      const client = new Anthropic({ apiKey: anthropicKey });
+      await client.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] });
+      results.anthropic = 'OK';
+    } catch(e) {
+      results.anthropic = e.message.includes('credit') || e.message.includes('billing') ? 'NO_CREDITS — add credits at console.anthropic.com' : `ERROR: ${e.message.substring(0,100)}`;
+    }
+  } else { results.anthropic = 'NOT_SET'; }
+
+  if (geminiKey) {
+    try {
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const model = new GoogleGenerativeAI(geminiKey).getGenerativeModel({ model: 'gemini-2.0-flash' });
+      await model.generateContent('hi');
+      results.gemini = 'OK';
+    } catch(e) {
+      results.gemini = e.message.includes('quota') || e.message.includes('429') ? 'QUOTA_EXCEEDED — get new key at aistudio.google.com/app/apikey' : `ERROR: ${e.message.substring(0,100)}`;
+    }
+  } else { results.gemini = 'NOT_SET'; }
+
+  const working = Object.values(results).some(v => v === 'OK');
+  res.json({ working, results, fix: working ? null : 'Get a FREE Gemini key at https://aistudio.google.com/app/apikey and set GEMINI_API_KEY in Render environment variables' });
 });
 
 // ── Extract ───────────────────────────────────────────────────────────────────
@@ -249,15 +279,21 @@ app.post('/api/analyze', async (req, res) => {
   } catch(e) {
     console.error('[/api/analyze error]', e.message);
     const msg = e.message || 'Analysis failed';
-    // Provide actionable error messages
-    if (msg.includes('API key') || msg.includes('No AI API key')) {
-      return res.status(500).json({ error: 'AI service not configured. Please set ANTHROPIC_API_KEY in the Render environment variables dashboard.' });
+    // ── Actionable error messages ──────────────────────────────────────────
+    if (msg.includes('credit balance') || msg.includes('credit') && msg.includes('low')) {
+      return res.status(503).json({ error: 'AI credits exhausted. To fix: go to console.anthropic.com → Plans & Billing → add credits. Or get a free Gemini key at aistudio.google.com/app/apikey and set GEMINI_API_KEY in Render.' });
     }
-    if (msg.includes('401') || msg.includes('invalid_api_key') || msg.includes('authentication')) {
-      return res.status(500).json({ error: 'AI API key is invalid or expired. Please update ANTHROPIC_API_KEY in Render dashboard.' });
+    if (msg.includes('API key') || msg.includes('No AI API key') || msg.includes('apiKey')) {
+      return res.status(503).json({ error: 'No AI API key configured. Get a FREE Gemini key at https://aistudio.google.com/app/apikey and add it as GEMINI_API_KEY in Render Environment Variables.' });
     }
-    if (msg.includes('quota') || msg.includes('429') || msg.includes('rate_limit')) {
-      return res.status(500).json({ error: 'AI rate limit reached. Please wait a minute and try again.' });
+    if (msg.includes('invalid_api_key') || msg.includes('authentication') || msg.includes('401')) {
+      return res.status(503).json({ error: 'AI API key is invalid. Get a new Gemini key at https://aistudio.google.com/app/apikey' });
+    }
+    if (msg.includes('quota') || msg.includes('429') || msg.includes('rate_limit') || msg.includes('QUOTA')) {
+      return res.status(503).json({ error: 'AI quota exceeded. Get a fresh FREE Gemini API key at https://aistudio.google.com/app/apikey and update GEMINI_API_KEY in Render.' });
+    }
+    if (msg.includes('overloaded') || msg.includes('529')) {
+      return res.status(503).json({ error: 'AI service overloaded. Please wait 30 seconds and retry.' });
     }
     res.status(500).json({ error: msg });
   }
