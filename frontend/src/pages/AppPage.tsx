@@ -29,9 +29,10 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     bankName: 'Axis Bank Limited',
     firmName: 'M/s. Aneesh Associates Private Limited',
-    advocateName: 'Sravan Kumar',
+    advocateName: 'Dr. Sravan Kumar D',
     reportType: 'APF'
   })
+  const [timeEstimate, setTimeEstimate] = useState('')
   const [progress, setProgress] = useState(0)
   const [statusMsg, setStatusMsg] = useState('')
   const [downloadUrl, setDownloadUrl] = useState('')
@@ -70,11 +71,14 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
       const formData = new FormData()
       selectedFiles.forEach(f => formData.append('files', f))
       setProgress(30)
-      setStatusMsg('Extracting text — OCR + Kannada/Telugu language detection...')
+      // Estimate time based on file count and type
+      const est = selectedFiles.length <= 2 ? '~30-60 seconds' : selectedFiles.length <= 5 ? '~1-2 minutes' : '~2-4 minutes'
+      setTimeEstimate(est)
+      setStatusMsg(`Extracting text — OCR + Indian language detection... (Est. ${est})`)
       const extractRes = await axiosWithRetry(() =>
         axios.post(`${API_BASE}/extract`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
-          timeout: 120000 // 2 min
+          timeout: 120000
         })
       ) as { data: { files: ExtractedFile[] } }
 
@@ -82,7 +86,7 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
       setExtractedFiles(extracted)
       setProgress(60)
       setStep('analyzing')
-      setStatusMsg('🔍 Sarvam AI translating Indian language content → Groq Llama analysing → building report...')
+      setStatusMsg(`🔍 Step 2/2: Sarvam AI translating → Groq Llama 3.3 structuring ${reportConfig.reportType} report for ${reportConfig.bankName}...`)
 
       const fileRefs = extracted.map(f => ({ storedAs: f.storedAs, originalname: f.filename }))
 
@@ -92,8 +96,10 @@ export function AppPage({ user, onLogout }: { user?: User|null; onLogout?: ()=>v
           fileRefs,
           reportType: reportConfig.reportType,
           bankName: reportConfig.bankName,
-          firmName: reportConfig.firmName
-        }, { timeout: 120000 }) // 2 min timeout
+          firmName: reportConfig.firmName,
+          userEmail: user?.email,
+          userName: user ? `${user.firstName} ${user.lastName}` : undefined
+        }, { timeout: 120000 })
       ) as { data: { data: LegalData } }
 
       setLegalData(analyzeRes.data.data)

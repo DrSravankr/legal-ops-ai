@@ -12,6 +12,7 @@ export interface ReportConfig {
   firmName: string
   advocateName: string
   reportType: string
+  formatTemplate?: string
 }
 
 export interface LegalData {

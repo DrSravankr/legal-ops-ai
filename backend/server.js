@@ -99,6 +99,42 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Formats directory (admin-uploaded bank report templates) ──────────────────
+const FORMATS_DIR = process.env.NODE_ENV === 'production'
+  ? path.join(os.tmpdir(), 'legal-ops-formats')
+  : path.join(__dirname, 'formats');
+if (!fs.existsSync(FORMATS_DIR)) fs.mkdirSync(FORMATS_DIR, { recursive: true });
+
+// ── Report types & banks config ───────────────────────────────────────────────
+const REPORT_TYPES = [
+  { value: 'APF', label: 'APF — Approved Project Finance' },
+  { value: 'CF',  label: 'CF — Construction Finance' },
+  { value: 'Legal', label: 'Legal Scrutiny Report' },
+  { value: 'Vetting', label: 'Vetting Report' },
+  { value: 'TSR', label: 'TSR — Title Search Report' },
+  { value: 'OV',  label: 'OV — Original Verification' },
+  { value: 'LAP', label: 'LAP — Loan Against Property' },
+];
+
+const BANK_LIST = [
+  'Axis Bank Limited','State Bank of India','HDFC Bank','ICICI Bank',
+  'ICICI Home Finance','Union Bank of India','LIC Housing Finance',
+  'IndusInd Bank','Kotak Mahindra Bank','Aditya Birla Capital',
+  'Bajaj Finance Limited','Federal Bank','Navi Finserv',
+  'Shinhan Bank','Can Fin Homes','Vridhi Housing Finance',
+  'TrueHome Finance','Techfino Capital','Credila Financial Services',
+  'Jio Credit Limited','Godrej Finance','Capri Global Capital',
+  'Hinduja Housing Finance','Tata Capital','Other Bank',
+];
+
+// ── Files store (track uploaded files per user) ───────────────────────────────
+const FILES_STORE = path.join(os.tmpdir(), 'legal-ops-files.json');
+function getFilesStore() {
+  try { if (fs.existsSync(FILES_STORE)) return JSON.parse(fs.readFileSync(FILES_STORE,'utf8')); } catch(e) {}
+  return [];
+}
+function saveFilesStore(files) { fs.writeFileSync(FILES_STORE, JSON.stringify(files,null,2)); }
+
 // ── Static files ──────────────────────────────────────────────────────────────
 if (IS_PRODUCTION) {
   const publicDir = path.join(__dirname, 'public');
@@ -228,6 +264,54 @@ const upload = multer({
   storage,
   limits: { fileSize: 500 * 1024 * 1024 }, // 500MB — supports large ZIPs
   // Accept ALL file types — no filter
+});
+
+// ── Config endpoints ──────────────────────────────────────────────────────────
+app.get('/api/config/report-types', (req, res) => res.json({ reportTypes: REPORT_TYPES }));
+app.get('/api/config/banks',        (req, res) => res.json({ banks: BANK_LIST }));
+
+// ── Bank format templates (admin only) ───────────────────────────────────────
+const fmtUpload = multer({ storage: multer.diskStorage({
+  destination: (req,f,cb) => cb(null, FORMATS_DIR),
+  filename: (req,f,cb) => {
+    const safe = f.originalname.replace(/[^a-zA-Z0-9._-]/g,'_');
+    cb(null, `${req.body.bank||'BANK'}_${req.body.reportType||'REPORT'}_${safe}`);
+  }
+}), limits: { fileSize: 20*1024*1024 } });
+
+app.get('/api/formats', (req,res) => {
+  const files = fs.existsSync(FORMATS_DIR)
+    ? fs.readdirSync(FORMATS_DIR).map(f => {
+        const s = fs.statSync(path.join(FORMATS_DIR,f));
+        return { name:f, size:s.size, uploaded:s.mtime };
+      })
+    : [];
+  res.json({ formats: files });
+});
+
+app.post('/api/formats/upload', fmtUpload.single('template'), heal(async (req,res) => {
+  if (!req.file) return res.status(400).json({ error:'No file uploaded' });
+  const user = getUsers().find(u=>u.email===req.body.email);
+  if (!user || user.role !== 'admin') return res.status(403).json({ error:'Admin only' });
+  agentLog('info', `Format uploaded: ${req.file.filename} by ${req.body.email}`);
+  res.json({ success:true, name: req.file.filename });
+}));
+
+app.delete('/api/formats/:name', heal(async (req,res) => {
+  const p = path.join(FORMATS_DIR, req.params.name);
+  if (fs.existsSync(p)) { fs.unlinkSync(p); res.json({ success:true }); }
+  else res.status(404).json({ error:'Not found' });
+}));
+
+// ── User files tracker ────────────────────────────────────────────────────────
+app.get('/api/my-files', (req,res) => {
+  const email = req.query.email;
+  const all   = getFilesStore();
+  const mine  = email ? all.filter(f=>f.uploadedBy===email) : all;
+  const total   = mine.length;
+  const pending = mine.filter(f=>f.status==='pending').length;
+  const closed  = mine.filter(f=>f.status==='completed').length;
+  res.json({ files:mine, total, pending, closed });
 });
 
 // ── Agent monitor endpoint ────────────────────────────────────────────────────
@@ -374,7 +458,8 @@ app.post('/api/extract', upload.array('files', 50), heal(async (req, res) => {
 app.post('/api/analyze', heal(async (req, res) => {
   const { texts, fileRefs, reportType='APF',
           bankName='Axis Bank Limited',
-          firmName='M/s. Aneesh Associates Private Limited' } = req.body;
+          firmName='M/s. Aneesh Associates Private Limited',
+          userEmail, userName } = req.body;
 
   if ((!texts||!texts.length) && (!fileRefs||!fileRefs.length))
     return res.status(400).json({ error: 'No documents provided' });
@@ -393,6 +478,18 @@ app.post('/api/analyze', heal(async (req, res) => {
   agentLog('info', `Analyzing ${fileObjects.length} file(s) with ${reportType}/${bankName}`);
   const data = await extractLegalData(combinedText, reportType, bankName, firmName, fileObjects);
   agentLog('info', 'Analysis complete', { status: data.overallStatus });
+
+  // Track this file for the user dashboard
+  if (userEmail) {
+    const store = getFilesStore();
+    store.push({
+      id: uuidv4(), uploadedBy: userEmail, userName: userName||userEmail,
+      reportType, bankName, status: 'pending',
+      fileCount: fileObjects.length, createdAt: new Date().toISOString(),
+      overallStatus: data.overallStatus
+    });
+    saveFilesStore(store);
+  }
   res.json({ success: true, data });
 }));
 
@@ -406,6 +503,16 @@ app.post('/api/generate-report', heal(async (req, res) => {
   agentLog('info', `Report generated: ${reportId}`);
   res.json({ success: true, reportId, downloadUrl: `/api/download-report/${reportId}` });
 }));  // heal() closes here
+
+// ── Close a file (staff/admin) ────────────────────────────────────────────────
+app.patch('/api/my-files/:id', heal(async (req,res) => {
+  const store = getFilesStore();
+  const file  = store.find(f=>f.id===req.params.id);
+  if (!file) return res.status(404).json({ error:'Not found' });
+  file.status = req.body.status || 'completed';
+  saveFilesStore(store);
+  res.json({ success:true, file });
+}));
 
 // ── Download Report ───────────────────────────────────────────────────────────
 app.get('/api/download-report/:id', (req, res) => {

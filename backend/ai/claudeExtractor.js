@@ -213,17 +213,17 @@ async function textComplete(prompt, maxTokens = 8000) {
 
 async function ocrWithIndianLanguages(filePath) {
   const Tesseract = require('tesseract.js');
-  // Try with all Indian languages + English for best results
-  const langs = 'eng+kan+tel+tam+hin+mal';
+  // FAST: English-only OCR (10-20s). Indian language text will be
+  // translated by Sarvam AI in the translateIfNeeded() step below.
+  // Loading all 6 Indian lang packs takes 3-5min on free tier — avoid.
   try {
-    const { data: { text } } = await Tesseract.recognize(filePath, langs, {
-      logger: () => {} // suppress progress logs
+    const { data: { text } } = await Tesseract.recognize(filePath, 'eng', {
+      logger: () => {}
     });
     return text.trim();
   } catch(e) {
-    // Fallback to English only if Indian lang packs not available
-    const { data: { text } } = await Tesseract.recognize(filePath, 'eng');
-    return text.trim();
+    console.warn('OCR failed:', e.message?.substring(0,60));
+    return '';
   }
 }
 
