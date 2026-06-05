@@ -185,10 +185,13 @@ async function textComplete(prompt, maxTokens = 8000) {
   const ai = getActiveAI();
 
   if (ai.type === 'groq') {
+    // Use llama-3.1-8b-instant for extraction (20k TPM free) and 70b for final report
+    const isReport = maxTokens >= 4000;
+    const model = isReport ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
     const r = await ai.client.chat.completions.create({
-      model: 'llama-3.3-70b-versatile', max_tokens: maxTokens,
+      model, max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.1 // low temperature = more deterministic, better for legal docs
+      temperature: 0.1
     });
     return r.choices[0]?.message?.content?.trim() || '';
   }
@@ -431,84 +434,17 @@ STRICT RULES:
 5. Mark gaps in title chain with isGap:true and HIGH/MEDIUM severity
 6. Output ONLY valid JSON — no markdown, no code blocks`;
 
+  // Limit doc text to stay within Groq free tier (12k TPM). ~3 chars per token.
+  const MAX_DOC_CHARS = 8000;
+  const docSnippet = allText.substring(0, MAX_DOC_CHARS);
+
   const PROMPT = `${SYSTEM_PROMPT}
 
-EXTRACTED DOCUMENT DATA (translated to English):
-${allText.substring(0, 90000)}
+EXTRACTED DOCUMENT DATA:
+${docSnippet}
 
-Generate a complete Legal Scrutiny Report in this exact JSON format:
-{
-  "reportHeader": {
-    "refNo": "AAPL/${bankName.substring(0,3).toUpperCase()}/APF-KA/XX-XX/2025",
-    "date": "DD/MM/YYYY",
-    "reportTitle": "LEGAL SCRUTINY REPORT",
-    "addressee": { "designation": "The Assistant Vice President", "department": "Head-Retail Asset Centre", "bank": "${bankName}", "city": "Bangalore" }
-  },
-  "subjectLine": "Legal Scrutiny Report in respect of [property and applicant details]",
-  "propertyDetails": {
-    "apfNo": "[actual APF number]", "applicantName": "[actual name]", "coApplicantName": null,
-    "natureOfTransaction": "${reportType}", "natureOfProperty": "Residential",
-    "ownerNames": ["actual owner names"], "developerName": "[actual developer]", "reraNo": "",
-    "scheduleProperty": {
-      "description": "[full property description]",
-      "surveyNumbers": [{"syNo":"[actual]","measurement":"[actual]","village":"[actual]","hobli":"[actual]","taluk":"[actual]","district":"[actual]"}],
-      "totalMeasurement": "[actual]",
-      "boundaries": {"east":"[actual]","west":"[actual]","north":"[actual]","south":"[actual]"}
-    }
-  },
-  "documentsFurnished": [
-    {"slNo":1,"date":"DD/MM/YYYY","particulars":"[EXACT STYLE DESCRIPTION]","documentType":"Photostat","syNo":"","isGap":false,"isSubHeader":false,"subHeaderText":null},
-    {"isSubHeader":true,"subHeaderText":"Survey Number heading","slNo":null,"date":null,"particulars":null,"documentType":null},
-    {"isGap":true,"gapDescription":"Description of missing link","syNo":"","severity":"HIGH","slNo":null,"date":null,"particulars":null,"documentType":null}
-  ],
-  "titleFlow": [{"period":"[from-to]","event":"[what happened]","parties":"[who]","documentRef":"[doc no]"}],
-  "checklistAnswers": {
-    "developerAcquiredRightsViaJDA": true,
-    "landownersEmpoweredDeveloperToSell": true,
-    "empoweringClause": "[clause reference]",
-    "considerationType": "Area Sharing",
-    "supplementaryAgreementExecuted": true,
-    "allLandownersSignedSupplementary": true,
-    "landConverted": true,
-    "conversionType": "Residential",
-    "minorsRights": "NIL",
-    "landAcquisitionOrders": "NIL",
-    "litigations": "NIL as per documents furnished",
-    "otherObservations": "NIL",
-    "sarfaesiEnforceable": true
-  },
-  "approvalsSanctions": [{"authority":"[actual]","type":"[actual]","number":"[actual]","date":"[actual]","description":"[actual]"}],
-  "encumbrances": [],
-  "legalInterventions": "NIL as per documents furnished",
-  "titleGaps": [{"slNo":1,"syNo":"[actual]","severity":"HIGH","gapType":"EC_GAP","description":"[actual gap]","documentRequired":"[what to get]"}],
-  "documentsBeforeDisbursal": {
-    "developerShare": [{"slNo":1,"particulars":"Agreement of Sale between Developer and Borrower","documentType":"Photostat"}],
-    "landownerShare":  [{"slNo":1,"particulars":"Agreement of Sale between Landowner and Borrower","documentType":"Photostat"}]
-  },
-  "documentsForCharge": {
-    "developerShare": [{"slNo":1,"particulars":"Sale Deed executed by Developer","documentType":"Original"}],
-    "landownerShare":  [{"slNo":1,"particulars":"Sale Deed executed by Landowner","documentType":"Original"}]
-  },
-  "documentsPostDisbursal": {
-    "developerShare": [{"slNo":1,"document":"Sale Deed to be executed by Developer in favour of Borrower availing loan from ${bankName}"}],
-    "landownerShare":  [{"slNo":1,"document":"Sale Deed to be executed by Landowner in favour of Borrower availing loan from ${bankName}"}]
-  },
-  "btDetails": "N/A",
-  "opinion": "[Full legal opinion paragraph — 3-4 sentences with actual property details, parties, and recommendation]",
-  "subjectTo": [
-    "Production and verification of all original documents before mortgage transaction",
-    "Updated Encumbrance Certificate to be obtained before disbursement",
-    "Personal inspection of the property by an officer of the Bank",
-    "Genuineness of all documents to be confirmed by the respective issuing authorities"
-  ],
-  "translatedContent": {
-    "hasIndianLanguageContent": true,
-    "languages": ["Kannada"],
-    "translationNotes": "Revenue records (RTC, MR) translated from Kannada using Sarvam AI"
-  },
-  "riskFlags": [],
-  "overallStatus": "CONDITIONALLY CLEAR",
-  "summary": "[2-3 sentence summary of title chain, key findings, and recommendation]"
+Return JSON ONLY (no markdown). Fill all fields with ACTUAL data from the documents:
+{"reportHeader":{"refNo":"AAPL/${bankName.substring(0,3).toUpperCase()}/APF-KA/XX/2025","date":"DD/MM/YYYY","reportTitle":"LEGAL SCRUTINY REPORT","addressee":{"designation":"The Assistant Vice President","department":"Head-Retail Asset Centre","bank":"${bankName}","city":"Bangalore"}},"subjectLine":"Legal Scrutiny Report in respect of...","propertyDetails":{"apfNo":"","applicantName":"","coApplicantName":null,"natureOfTransaction":"${reportType}","natureOfProperty":"Residential","ownerNames":[],"developerName":"","reraNo":"","scheduleProperty":{"description":"","surveyNumbers":[{"syNo":"","measurement":"","village":"","hobli":"","taluk":"","district":""}],"totalMeasurement":"","boundaries":{"east":"","west":"","north":"","south":""}}},"documentsFurnished":[{"slNo":1,"date":"DD/MM/YYYY","particulars":"[STYLE: doc type, reg no, parties, sy no, area]","documentType":"Photostat","syNo":"","isGap":false,"isSubHeader":false,"subHeaderText":null}],"titleFlow":[{"period":"","event":"","parties":"","documentRef":""}],"checklistAnswers":{"developerAcquiredRightsViaJDA":true,"landownersEmpoweredDeveloperToSell":true,"empoweringClause":"","considerationType":"Area Sharing","supplementaryAgreementExecuted":true,"allLandownersSignedSupplementary":true,"landConverted":true,"conversionType":"Residential","minorsRights":"NIL","landAcquisitionOrders":"NIL","litigations":"NIL as per documents furnished","otherObservations":"NIL","sarfaesiEnforceable":true},"approvalsSanctions":[{"authority":"","type":"","number":"","date":"","description":""}],"encumbrances":[],"legalInterventions":"NIL as per documents furnished","titleGaps":[],"documentsBeforeDisbursal":{"developerShare":[{"slNo":1,"particulars":"Agreement of Sale","documentType":"Photostat"}],"landownerShare":[{"slNo":1,"particulars":"Agreement of Sale","documentType":"Photostat"}]},"documentsForCharge":{"developerShare":[{"slNo":1,"particulars":"Sale Deed","documentType":"Original"}],"landownerShare":[{"slNo":1,"particulars":"Sale Deed","documentType":"Original"}]},"documentsPostDisbursal":{"developerShare":[{"slNo":1,"document":"Sale Deed by Developer to Borrower — ${bankName}"}],"landownerShare":[{"slNo":1,"document":"Sale Deed by Landowner to Borrower — ${bankName}"}]},"btDetails":"N/A","opinion":"[3-4 sentence legal opinion with actual property details and recommendation]","subjectTo":["Verification of all original documents","Updated EC before disbursement","Personal inspection by Bank officer","Genuineness of documents to be confirmed"],"translatedContent":{"hasIndianLanguageContent":true,"languages":["Kannada"],"translationNotes":"Revenue documents translated from Kannada via Sarvam AI"},"riskFlags":[],"overallStatus":"CONDITIONALLY CLEAR","summary":"[2-3 sentence summary]"
 }`;
 
   let raw = await textComplete(PROMPT, 8000);
