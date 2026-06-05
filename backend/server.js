@@ -151,11 +151,13 @@ const upload = multer({
 
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
-  const hasGemini    = !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+  const hasGroq     = !!process.env.GROQ_API_KEY;
+  const hasAnthopic = !!process.env.ANTHROPIC_API_KEY;
+  const hasGemini   = !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+  const aiProvider  = hasGroq ? 'groq (FREE Llama 3.3)' : hasAnthopic ? 'anthropic' : hasGemini ? 'gemini' : 'NONE';
   res.json({
     status: 'ok', message: 'Legal Ops AI System is running',
-    ai: hasAnthropic ? 'anthropic' : hasGemini ? 'gemini' : 'NONE',
+    ai: aiProvider, aiReady: hasGroq || hasAnthopic || hasGemini,
     uploadDir: UPLOADS_DIR, reportsDir: REPORTS_DIR
   });
 });
@@ -166,6 +168,20 @@ app.get('/api/test-ai', async (req, res) => {
   const geminiKey    = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   const results = {};
 
+  // Test Groq (PRIMARY — FREE, no payment)
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    try {
+      const Groq = require('groq-sdk');
+      const groq = new Groq({ apiKey: groqKey });
+      await groq.chat.completions.create({ model: 'llama-3.3-70b-versatile', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] });
+      results.groq = 'OK — FREE Llama 3.3 70B';
+    } catch(e) {
+      results.groq = e.message.includes('401') || e.message.includes('invalid') ? 'INVALID KEY — get new key at console.groq.com' : `ERROR: ${e.message.substring(0,100)}`;
+    }
+  } else { results.groq = 'NOT_SET — Get FREE key at https://console.groq.com (No payment needed)'; }
+
+  // Test Anthropic (fallback)
   if (anthropicKey) {
     try {
       const { Anthropic } = require('@anthropic-ai/sdk');
@@ -173,10 +189,11 @@ app.get('/api/test-ai', async (req, res) => {
       await client.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] });
       results.anthropic = 'OK';
     } catch(e) {
-      results.anthropic = e.message.includes('credit') || e.message.includes('billing') ? 'NO_CREDITS — add credits at console.anthropic.com' : `ERROR: ${e.message.substring(0,100)}`;
+      results.anthropic = e.message.includes('credit') || e.message.includes('billing') ? 'NO_CREDITS — top up at console.anthropic.com' : `ERROR: ${e.message.substring(0,100)}`;
     }
   } else { results.anthropic = 'NOT_SET'; }
 
+  // Test Gemini (fallback)
   if (geminiKey) {
     try {
       const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -188,8 +205,8 @@ app.get('/api/test-ai', async (req, res) => {
     }
   } else { results.gemini = 'NOT_SET'; }
 
-  const working = Object.values(results).some(v => v === 'OK');
-  res.json({ working, results, fix: working ? null : 'Get a FREE Gemini key at https://aistudio.google.com/app/apikey and set GEMINI_API_KEY in Render environment variables' });
+  const working = Object.values(results).some(v => v.startsWith('OK'));
+  res.json({ working, results, fix: working ? 'All good!' : 'Get FREE Groq key at https://console.groq.com — set GROQ_API_KEY in Render Environment Variables' });
 });
 
 // ── Extract ───────────────────────────────────────────────────────────────────
@@ -280,17 +297,18 @@ app.post('/api/analyze', async (req, res) => {
     console.error('[/api/analyze error]', e.message);
     const msg = e.message || 'Analysis failed';
     // ── Actionable error messages ──────────────────────────────────────────
-    if (msg.includes('credit balance') || msg.includes('credit') && msg.includes('low')) {
-      return res.status(503).json({ error: 'AI credits exhausted. To fix: go to console.anthropic.com → Plans & Billing → add credits. Or get a free Gemini key at aistudio.google.com/app/apikey and set GEMINI_API_KEY in Render.' });
+    const FIX = 'PERMANENT FIX: Get a FREE Groq key at https://console.groq.com → set GROQ_API_KEY in Render Environment Variables. No credit card, no payment, 6000 requests/day free.';
+    if (msg.includes('No AI API key') || msg.includes('apiKey') || msg.includes('not configured')) {
+      return res.status(503).json({ error: `No AI API key. ${FIX}` });
     }
-    if (msg.includes('API key') || msg.includes('No AI API key') || msg.includes('apiKey')) {
-      return res.status(503).json({ error: 'No AI API key configured. Get a FREE Gemini key at https://aistudio.google.com/app/apikey and add it as GEMINI_API_KEY in Render Environment Variables.' });
+    if (msg.includes('invalid') && (msg.includes('key') || msg.includes('api'))) {
+      return res.status(503).json({ error: `Invalid API key. ${FIX}` });
     }
-    if (msg.includes('invalid_api_key') || msg.includes('authentication') || msg.includes('401')) {
-      return res.status(503).json({ error: 'AI API key is invalid. Get a new Gemini key at https://aistudio.google.com/app/apikey' });
+    if (msg.includes('credit balance') || msg.includes('credit') || msg.includes('billing')) {
+      return res.status(503).json({ error: `AI credits exhausted. ${FIX}` });
     }
     if (msg.includes('quota') || msg.includes('429') || msg.includes('rate_limit') || msg.includes('QUOTA')) {
-      return res.status(503).json({ error: 'AI quota exceeded. Get a fresh FREE Gemini API key at https://aistudio.google.com/app/apikey and update GEMINI_API_KEY in Render.' });
+      return res.status(503).json({ error: `AI quota exceeded. ${FIX}` });
     }
     if (msg.includes('overloaded') || msg.includes('529')) {
       return res.status(503).json({ error: 'AI service overloaded. Please wait 30 seconds and retry.' });
