@@ -76,7 +76,7 @@ RULES:
             const text = data.text.trim();
             if (text.length > 100) {
               const msg = await ai.client.messages.create({
-                model: 'claude-opus-4-5',
+                model: 'claude-sonnet-4-6',
                 max_tokens: 2000,
                 messages: [{ role: 'user', content: EXTRACTION_PROMPT + '\n\nDOCUMENT TEXT:\n' + text.substring(0, 15000) }]
               });
@@ -91,8 +91,8 @@ RULES:
         const mimeMap = { pdf:'application/pdf', jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', tiff:'image/tiff', tif:'image/tiff', bmp:'image/bmp', webp:'image/webp' };
         const mime    = mimeMap[ext] || 'application/octet-stream';
 
-        const msg = await ai.client.messages.create({
-          model: 'claude-opus-4-5',
+        const msgParams = {
+          model: 'claude-sonnet-4-6',
           max_tokens: 2000,
           messages: [{
             role: 'user',
@@ -106,7 +106,10 @@ RULES:
                   { type: 'text', text: EXTRACTION_PROMPT }
                 ]
           }]
-        });
+        };
+        // Add PDF beta header for PDF documents
+        if (isPdf) msgParams.betas = ['pdfs-2024-09-25'];
+        const msg = await ai.client.messages.create(msgParams);
         return msg.content[0].type === 'text' ? msg.content[0].text.trim() : null;
 
       } else if (['.docx', '.doc'].includes('.' + ext)) {
@@ -314,7 +317,7 @@ Return this exact JSON (fill with ACTUAL data from documents above):
   let raw;
   if (ai.type === 'anthropic') {
     const msg = await ai.client.messages.create({
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 8000,
       messages: [{ role: 'user', content: PROMPT }]
     });
